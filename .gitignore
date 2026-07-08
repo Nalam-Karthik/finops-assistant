@@ -1,0 +1,6 @@
+.env
+finops.db
+chroma_data/
+__pycache__/
+*.pyc
+venv/

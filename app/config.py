@@ -7,8 +7,8 @@ class Settings(BaseSettings):
 
     # Plain strings, not client objects — this is what makes swapping
     # OpenAI for Ollama later a one-line change instead of a rewrite.
-    openai_api_key: str = ""
-    llm_model: str = "gpt-4o-mini"
+    gemini_api_key: str = ""
+    llm_model: str = "gemini-2.5-flash"
 
     chroma_persist_dir: str = "./chroma_data"
 

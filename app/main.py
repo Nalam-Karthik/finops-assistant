@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+# 1. Import the router you just created in app/routers/ask.py
+from app.routers.ask import router as ask_router
 
 app = FastAPI(
     title="FinOps Assistant",
@@ -17,6 +19,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 2. Register your new router here
+app.include_router(ask_router, tags=["FinOps Core"])
 
 
 @app.get("/")

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinOps Intelligent Text-to-SQL Assistant</title>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #131c2e;
+            --bg-input: #1b2640;
+            --border-glow: #1e293b;
+            --border-focus: #38bdf8;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-glow: #0ea5e9;
+            --accent-success: #10b981;
+            --accent-error: #f43f5e;
+            --chip-bg: rgba(56, 189, 248, 0.1);
+            --chip-text: #7dd3fc;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Top Bar & App Brand */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1rem;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.75rem;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .brand p {
+            margin: 0.25rem 0 0 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .badge-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-success);
+        }
+
+        /* Interactive Layout Split */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 850px) {
+            .workspace {
+                grid-template-columns: 280px 1fr;
+            }
+        }
+
+        /* Sidebar Schema Explorer */
+        .sidebar {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 1.25rem;
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table-accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        details {
+            background: var(--bg-main);
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        details[open] {
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        summary {
+            padding: 0.6rem 0.75rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: #cbd5e1;
+            user-select: none;
+        }
+
+        summary:hover {
+            color: var(--border-focus);
+        }
+
+        .table-meta {
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-glow);
+            line-height: 1.4;
+            background: rgba(0,0,0,0.1);
+        }
+
+        /* Main Console & Inputs */
+        .console-pane {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-area {
+            display: flex;
+            gap: 0.75rem;
+            background: var(--bg-input);
+            padding: 0.4rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-area:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+        }
+
+        .search-area input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-area button {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .search-area button:hover {
+            opacity: 0.95;
+        }
+
+        /* Suggestion Pill Chips */
+        .suggestions {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .suggestions span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .chip {
+            background-color: var(--chip-bg);
+            color: var(--chip-text);
+            padding: 0.35rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            transition: all 0.2s;
+        }
+
+        .chip:hover {
+            background-color: rgba(56, 189, 248, 0.25);
+            transform: translateY(-1px);
+        }
+
+        /* Dynamic Visual Tabs */
+        .tab-group {
+            display: flex;
+            border-bottom: 2px solid var(--border-glow);
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.6rem 0.25rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--border-focus);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--border-focus);
+            box-shadow: 0 0 8px var(--border-focus);
+        }
+
+        /* Custom Output Containers */
+        pre {
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-glow);
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            color: #34d399;
+            font-family: 'Fira Code', Consolas, Monaco, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .error-alert {
+            background: rgba(244, 63, 94, 0.1);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: rgba(255, 255, 255, 0.02);
+            color: var(--border-focus);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.85rem 1rem;
+            border-bottom: 2px solid var(--border-glow);
+            text-align: left;
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-glow);
+            color: #e2e8f0;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Skeleton Loading Animation */
+        .skeleton {
+            animation: skeleton-loading 1.5s infinite linear;
+            background: linear-gradient(90deg, #131c2e 25%, #1b2640 50%, #131c2e 75%);
+            background-size: 200% 100%;
+            border-radius: 6px;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <header>
+        <div class="brand">
+            <h1>FinOps Core Console</h1>
+            <p>Gemini AI Text-to-SQL Gateway Engine</p>
+        </div>
+        <div class="badge-status">
+            <div class="status-dot"></div>
+            <span>Agent Active</span>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <aside class="sidebar">
+            <h3>Schema Catalog</h3>
+            <div class="table-accordion">
+                <details>
+                    <summary>📊 billing</summary>
+                    <div class="table-meta">Infrastructure cost fact records.<br><strong>Keys:</strong> project_id, cloud_service_id, month, year, amount.</div>
+                </details>
+                <details>
+                    <summary>🚀 projects</summary>
+                    <div class="table-meta">Corporate running spaces.<br><strong>Keys:</strong> id, name, department_id, owner_id.</div>
+                </details>
+                <details>
+                    <summary>☁️ cloud_services</summary>
+                    <div class="table-meta">Lookup utility catalog.<br><strong>Keys:</strong> id, name, category.</div>
+                </details>
+                <details>
+                    <summary>💰 budgets</summary>
+                    <div class="table-meta">Allocated limit mappings.<br><strong>Keys:</strong> project_id, month, year, budgeted_amount.</div>
+                </details>
+                <details>
+                    <summary>🏢 departments</summary>
+                    <div class="table-meta">Organizational divisions.<br><strong>Keys:</strong> id, name, code.</div>
+                </details>
+                <details>
+                    <summary>👥 employees</summary>
+                    <div class="table-meta">Corporate staff targets.<br><strong>Keys:</strong> id, name, email, role, department_id.</div>
+                </details>
+            </div>
+        </aside>
+
+        <main class="console-pane">
+            <div class="card">
+                <div class="search-area">
+                    <input type="text" id="queryInput" placeholder="Describe the cloud cost insight you require...">
+                    <button id="executeBtn">Run Analytics</button>
+                </div>
+                
+                <div class="suggestions">
+                    <span>Try asking:</span>
+                    <div class="chip" onclick="applySuggestion(this)">Which project had the highest compute cost?</div>
+                    <div class="chip" onclick="applySuggestion(this)">Show department engineering codes</div>
+                    <div class="chip" onclick="applySuggestion(this)">Delete everything from table billing</div>
+                </div>
+
+                <div id="errorAlert" class="error-alert"></div>
+            </div>
+
+            <div id="loadingState" class="card hidden" style="display:flex; flex-direction:column; gap:1rem;">
+                <div class="skeleton" style="height: 24px; width: 40%;"></div>
+                <div class="skeleton" style="height: 80px; width: 100%;"></div>
+            </div>
+
+            <div id="runtimeResults" class="hidden">
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h3 style="margin-top:0; margin-bottom: 1rem; font-size: 1rem; color: var(--text-secondary)">COMPILED EXECUTION ENGINE</h3>
+                    <pre id="sqlBlock"></pre>
+                </div>
+
+                <div class="card">
+                    <div class="tab-group">
+                        <button class="tab-btn active" onclick="switchTab('table')">Output Recordset</button>
+                        <button class="tab-btn" onclick="switchTab('json')">Structured API Response</button>
+                    </div>
+
+                    <div id="tabView-table">
+                        <div id="tableWrapper"></div>
+                    </div>
+
+                    <div id="tabView-json" class="hidden">
+                        <pre id="jsonBlock" style="color: #60a5fa;"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    const queryInput = document.getElementById('queryInput');
+    const executeBtn = document.getElementById('executeBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const loadingState = document.getElementById('loadingState');
+    const runtimeResults = document.getElementById('runtimeResults');
+    const sqlBlock = document.getElementById('sqlBlock');
+    const jsonBlock = document.getElementById('jsonBlock');
+    const tableWrapper = document.getElementById('tableWrapper');
+
+    function applySuggestion(element) {
+        queryInput.value = element.textContent;
+        handlePipelineExecution();
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        if (tabName === 'table') {
+            document.getElementById('tabView-table').classList.remove('hidden');
+            document.getElementById('tabView-json').classList.add('hidden');
+        } else {
+            document.getElementById('tabView-table').classList.add('hidden');
+            document.getElementById('tabView-json').classList.remove('hidden');
+        }
+    }
+
+    async function handlePipelineExecution() {
+        const queryText = queryInput.value.trim();
+        if (!queryText) return;
+
+        // Reset display states smoothly
+        errorAlert.style.display = 'none';
+        runtimeResults.classList.add('hidden');
+        loadingState.classList.remove('hidden');
+
+        try {
+            const endpoint = 'http://127.0.0.1:8000/ask';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: queryText })
+            });
+
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.detail || 'Backend analytical pipeline fault.');
+            }
+
+            // Bind compiled execution data
+            sqlBlock.textContent = payload.generated_sql;
+            jsonBlock.textContent = JSON.stringify(payload, null, 2);
+
+            // Construct Data Matrix Grid Table
+            if (payload.results && payload.results.length > 0) {
+                let columns = Object.keys(payload.results[0]);
+                let dynamicTableHtml = '<table><thead><tr>';
+                
+                columns.forEach(col => { dynamicTableHtml += `<th>${col}</th>`; });
+                dynamicTableHtml += '</tr></thead><tbody>';
+
+                payload.results.forEach(record => {
+                    dynamicTableHtml += '<tr>';
+                    columns.forEach(col => { dynamicTableHtml += `<td>${record[col] !== null ? record[col] : '<em style="color:var(--text-secondary)">null</em>'}</td>`; });
+                    dynamicTableHtml += '</tr>';
+                });
+                
+                dynamicTableHtml += '</tbody></table>';
+                tableWrapper.innerHTML = dynamicTableHtml;
+            } else {
+                tableWrapper.innerHTML = '<p style="color: var(--text-secondary); font-size:0.9rem;">Command pipeline returned zero matching row entities.</p>';
+            }
+
+            // Expose results view frame
+            runtimeResults.classList.remove('hidden');
+
+        } catch (err) {
+            errorAlert.innerHTML = `⚠️ <strong>Execution Blocked:</strong> ${err.message}`;
+            errorAlert.style.display = 'flex';
+        } finally {
+            loadingState.classList.add('hidden');
+        }
+    }
+
+    executeBtn.addEventListener('click', handlePipelineExecution);
+    queryInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handlePipelineExecution();
+    });
+</script>
+
+</body>
+</html>
